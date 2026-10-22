@@ -256,6 +256,22 @@ pass that definition through the SDK's `toolDefinition` call option. This keeps
 the selected output-schema validation without eagerly compiling unrelated
 catalog schemas. Re-read definitions if the server advertises a changed list.
 
+Artifact verification uses `artifactMcpCall` for both lifecycle and analysis
+calls. A fresh SDK client has no held tool listing, so a bare `callTool` can
+skip output-schema validation. The helper discovers actual advertised
+definitions, rejects missing or ambiguous schemas, and validates the requested
+tool without compiling unrelated catalog schemas. REA registers process-static
+tool contracts; bindings share one discovery per negotiated connection and are
+discarded on reconnect or failed discovery. Keep raw artifact calls on this
+shared path and retain explicit request options such as timeouts.
+Caller-supplied tool definitions are rejected: the helper owns selection from
+the advertised catalog so a stale or permissive schema cannot bypass it.
+
+The regression fixture changes only `canonical_path` in a real stdio response
+to a number. The old helper accepts that response; the named schema must reject
+it. This client-boundary fault injection does not establish native Apple
+behavior, which remains covered by the macOS verification lane.
+
 Report unavailable authority as a named skip. Await owned cleanup before a
 verifier reports success. Native process inspectors are released at Vitest
 worker teardown; fork termination does not run Node exit hooks, and per-file
@@ -1788,9 +1804,11 @@ projects the `environment-manifest` view with all three template rules through
 the built CLI, packs the checkout with `npm pack`, exports the bundle with
 `--package-tarball` so the image installs this checkout rather than the
 registry package, and runs `agent-env run` on the bundle. It checks that the
-export reports the planned file set with the inputs copied byte-exact, that
-the runner exits `0` with `tasks/smoke.json` reported as passed and the
-verifier's description naming the tool count, and that no container exists
+export reports the planned file set with the inputs copied byte-exact and a
+bundle served from the derived state, which serves fewer tools than the
+manifest because write tools are not served, that the runner exits `0` with
+`tasks/smoke.json` reported as passed and the verifier's description naming
+that served tool count, and that no container exists
 after the run that did not exist before; the container inventory runs even when
 the run fails or times out, so a failed receipt still lists what it left. The one exception is the framework's
 own image-store helper, `agentenv-registry` (or `agentenv-registry-<port>`),
