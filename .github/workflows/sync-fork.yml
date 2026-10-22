@@ -3,7 +3,7 @@ name: Sync Fork Upstream
 on:
   schedule:
     # 每 5 分钟自动检查一次原仓库是否有新代码
-    - cron: '*/5 * * * *'
+    - cron: '2-59/5 * * * *'
   # 支持在 GitHub 网页上手动点击运行
   workflow_dispatch:
 
