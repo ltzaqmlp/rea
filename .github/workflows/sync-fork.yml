@@ -1,29 +1,28 @@
 name: Sync Fork Upstream
 
-   on:
-     schedule:
-       # 每 5 分钟自动检查一次原仓库是否有新代码
-       - cron: '*/5 * * * *'
-     # 支持在 GitHub 网页上手动点击运行
-     workflow_dispatch:
+on:
+  schedule:
+    # 每 5 分钟自动检查一次原仓库是否有新代码
+    - cron: '*/5 * * * *'
+  # 支持在 GitHub 网页上手动点击运行
+  workflow_dispatch:
 
-   concurrency:
-     group: ${{ github.workflow }}-${{ github.ref }}
-     cancel-in-progress: true
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
-   jobs:
-     sync:
-       name: Sync with upstream (morluto/rea)
-       runs-on: ubuntu-latest
-       if: github.repository == 'ltzaqmlp/rea'
+jobs:
+  sync:
+    name: Sync with upstream (morluto/rea)
+    runs-on: ubuntu-latest
+    if: github.repository == 'ltzaqmlp/rea'
 
-       permissions:
-         contents: write
-         workflows: write
+    permissions:
+      contents: write
 
-       steps:
-         - name: Sync fork via GitHub CLI
-           run: |
-             gh repo sync "${{ github.repository }}" -b main --source morluto/rea
-           env:
-             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Sync fork via GitHub CLI
+        run: |
+          gh repo sync "${{ github.repository }}" -b main --source morluto/rea
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
