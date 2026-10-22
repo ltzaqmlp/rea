@@ -46,7 +46,10 @@ import { registerAnalysisViewTool } from "./registerAnalysisViewTool.js";
 import { registerBinaryDiagnosticsTools } from "./registerBinaryDiagnosticsTools.js";
 import { FridaInstrumentationManager } from "../frida/FridaInstrumentationManager.js";
 import { registerFridaTools } from "./registerFridaTools.js";
-import { createBinaryLayoutService } from "../composition/binaryDiagnostics.js";
+import {
+  createByteEntropyService,
+  createBinaryLayoutService,
+} from "../composition/binaryDiagnostics.js";
 import type { BinaryLayoutService } from "../application/binaryDiagnostics/BinaryLayoutService.js";
 import { createCatalogIdentity } from "../catalogIdentity.js";
 import { EvidenceMcpServer } from "./EvidenceMcpServer.js";
@@ -770,6 +773,7 @@ const registerConfiguredAnalysisTools = (
   registerBinaryDiagnosticsTools(
     server,
     options.binaryLayout ?? createBinaryLayoutService(environment),
+    createByteEntropyService(artifactResources),
     toolLogger,
     recordEvidence,
     evidenceById,
@@ -1003,6 +1007,7 @@ const registerObservationTools = ({
   recordEvidenceWithUnknown,
   withAdmittedAnalysis,
   artifactResources,
+  environment,
 }: ServerToolContext): void => {
   const common = { logger, recordEvidence, withAdmittedAnalysis };
   registerWebScriptTool(server, { ...common, artifactResources });
@@ -1019,6 +1024,7 @@ const registerObservationTools = ({
   registerElectronTools(server, {
     ...common,
     artifactResources,
+    environment,
     evidenceById,
     electron: options.electronObservation,
     electronActive: options.electronActiveObservation,
