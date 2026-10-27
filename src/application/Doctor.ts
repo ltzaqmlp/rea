@@ -17,7 +17,7 @@ import {
 } from "../config/parseConfig.js";
 import { homeDirectoryFromEnvironment } from "../config/homeDirectory.js";
 import { snapshotEnvironment } from "../process/snapshotEnvironment.js";
-import { join } from "node:path";
+import { appendCallerPath } from "../filesystem/callerPath.js";
 
 import { analysisErrorRemediationAction } from "../domain/analysisErrorPresentation.js";
 import { BinaryTargetError } from "../domain/configurationErrors.js";
@@ -138,8 +138,6 @@ export interface DoctorHost {
   providerInspections?(): Promise<readonly DoctorProviderInspection[]>;
   /** Resolve a parsed upstream request budget from the effective client environment. */
   resolveProviderRequestBudget?: ProviderRequestBudgetResolver;
-  /** Validated provider settings preserved by setup, independent of readiness. */
-  providerRegistrationEnvironment?(): Readonly<Record<string, string>>;
   installationPaths?(): Promise<readonly string[]>;
   /** Undefined checks installed skill roots; explicit selections stay scoped. */
   installedSkillIdentity?(
@@ -403,8 +401,12 @@ const collectDoctorIdentity = async (
       },
       live_server: {
         state: "unknown",
+        // `binary_session` is advertised only when the saved scope includes
+        // `session`, so the remediation also names the scope requirement: doctor
+        // cannot see the saved selection here, and one sentence has to fit both
+        // a complete registration and a scope that omits the session family.
         remediation:
-          "Call binary_session in the active client to inspect the running server identity.",
+          "Call binary_session in the active client to inspect the running server identity; a registration whose saved scope omits the session family cannot report it, so include session through rea setup --tool-families and restart first.",
       },
       installations: {
         paths: installationPaths,
@@ -519,9 +521,6 @@ export interface SystemDoctorHostOptions {
     resourceScope: RetainedResourceScope,
     signal: AbortSignal,
   ) => Promise<readonly DoctorProviderInspection[]>;
-  readonly providerRegistrationEnvironment?: () => Readonly<
-    Record<string, string>
-  >;
   readonly resolveProviderRequestBudget?: (
     provider: Parameters<ProviderRequestBudgetResolver>[0],
     environment: Parameters<ProviderRequestBudgetResolver>[1],
@@ -709,7 +708,10 @@ export const systemDoctorHost = (
         );
         return appdir === undefined
           ? undefined
-          : join(appdir, "Hopper Disassembler.app/Contents/MacOS/hopper");
+          : appendCallerPath(
+              appdir,
+              "Hopper Disassembler.app/Contents/MacOS/hopper",
+            );
       });
     },
     manualHopperPaths: () =>
@@ -721,12 +723,6 @@ export const systemDoctorHost = (
             resources.run(() =>
               options.providerInspections!(resourceScope, inspectionSignal),
             ),
-        }),
-    ...(options.providerRegistrationEnvironment === undefined
-      ? {}
-      : {
-          providerRegistrationEnvironment:
-            options.providerRegistrationEnvironment,
         }),
     ...(resolveProviderRequestBudget === undefined
       ? {}
