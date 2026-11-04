@@ -20,6 +20,7 @@ import { OwnedFileHandle } from "../../../../src/filesystem/OwnedFileHandle.js";
 import { AnalysisProviderRegistry } from "../../../../src/application/binary/AnalysisProviderRegistry.js";
 import { composeBinarySession } from "../../../../src/application/binary/BinarySessionComposition.js";
 import { projectAnalysisError } from "../../../../src/domain/analysisErrorProjection.js";
+import { KUNA_NATIVE_VALUE_FLOW_UNAVAILABLE } from "../../../../src/kuna/KunaSessionClient.js";
 import { KunaProvider } from "../../../../src/kuna/KunaProvider.js";
 import { KUNA_FUNCTION_TEXT_BYTES } from "../../../../src/kuna/KunaLimits.js";
 import { KunaProjectCache } from "../../../../src/kuna/KunaProjectCache.js";
@@ -509,6 +510,10 @@ it("builds a dossier with text and call relationships, leaving unsupported facet
     },
     pseudocode: "int main(void)\n{\n  return 0;\n}",
     assembly: ["main:  ; 0x1000", "  00001000: c3     RET"],
+    native_value_flow: {
+      available: false,
+      reason: KUNA_NATIVE_VALUE_FLOW_UNAVAILABLE,
+    },
     facet_availability: {
       pseudocode: { available: true },
       assembly: { available: true },
@@ -650,6 +655,7 @@ it("keeps answering pseudocode one function at a time when the export fails", as
       userMessage: expect.stringContaining(
         "not in recognized object file format",
       ),
+      diagnostics: { failed_project_records: "not_exposed" },
     },
   });
   const pseudocode = await run(client, "procedure_pseudo_code", {
@@ -657,8 +663,14 @@ it("keeps answering pseudocode one function at a time when the export fails", as
   });
   expect(pseudocode.rawResult).toMatchObject({
     source: { kind: "single-function" },
+    project_export: { state: "failed", failure_records: "not_exposed" },
   });
-  expect(pseudocode.limitations.at(-1)).toContain("The project export failed");
+  expect(pseudocode.limitations).toEqual(
+    expect.arrayContaining([
+      expect.stringContaining("The project export failed"),
+      "REA does not expose per-function records from a failed project export.",
+    ]),
+  );
   expect(pseudocode.limitations.join(" ")).not.toContain("still building");
   expect(pseudocode.limitations.join(" ")).toContain(
     "larger project-export spans remain in the local project export",

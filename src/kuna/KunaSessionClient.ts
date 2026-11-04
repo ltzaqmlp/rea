@@ -239,6 +239,9 @@ const descriptorCleanupError = (
   return error;
 };
 
+const FAILED_PROJECT_RECORDS_GUIDANCE =
+  "REA does not expose per-function records from a failed project export.";
+
 /**
  * How a request that needs the export reports the export's failure. A session
  * never rebuilds a failed export, so repeating the request cannot succeed; the
@@ -276,11 +279,12 @@ const exportUnavailable = (
       diagnostics: {
         export_error: failure._tag,
         export_code: exported.code,
+        failed_project_records: "not_exposed",
         ...(exported.details === undefined
           ? {}
           : { export_details: exported.details }),
       },
-      userMessage: `Kuna's project export failed, so ${operation} is unavailable in this session: ${reason.replace(/\.?$/u, ".")} ${next}`,
+      userMessage: `Kuna's project export failed, so ${operation} is unavailable in this session: ${reason.replace(/\.?$/u, ".")} ${FAILED_PROJECT_RECORDS_GUIDANCE} Inspect any captured diagnostics. ${next}`,
     },
   );
 };
@@ -297,6 +301,10 @@ const kunaVerificationLimitations = (
 
 /** Kuna names a procedure by its inventory entry or by an exact entry address. */
 const procedureSelectorSchema = z.string().min(1);
+
+/** REA's Kuna integration does not supply a def-use model for any procedure. */
+export const KUNA_NATIVE_VALUE_FLOW_UNAVAILABLE =
+  "REA's Kuna provider does not report native def-use observations.";
 
 /**
  * One Kuna analysis session for one target.
@@ -710,7 +718,11 @@ export class KunaSessionClient implements AnalysisClient {
       };
     if (this.#project === undefined) return { state: "not-started" };
     if (this.#exportFailure !== undefined)
-      return { state: "failed", reason: this.#exportFailure };
+      return {
+        state: "failed",
+        reason: this.#exportFailure,
+        failure_records: "not_exposed",
+      };
     return {
       state: "building",
       phase: this.#status?.phase ?? null,
@@ -1268,6 +1280,7 @@ export class KunaSessionClient implements AnalysisClient {
             ? []
             : [
                 `The project export failed, so later requests also use single-function runs: ${exportFailure}`,
+                FAILED_PROJECT_RECORDS_GUIDANCE,
               ]),
         ],
       });
@@ -1523,7 +1536,11 @@ export class KunaSessionClient implements AnalysisClient {
       referenced_names: [],
       basic_blocks: [],
       native_api: null,
-      native_value_flow: null,
+      native_value_flow: {
+        available: false,
+        reason: KUNA_NATIVE_VALUE_FLOW_UNAVAILABLE,
+        limitations: [],
+      },
       facet_availability: {
         pseudocode:
           text === null
