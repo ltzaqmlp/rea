@@ -188,7 +188,11 @@ The complete field/type diagnostic is preserved when normalization fits the
 response budget, including request-specific rejected fields and reasons. Zod
 input issues retain their field paths and available type and range constraints.
 SDK diagnostic parts may be distributed between field issues and the main
-message so each retained explanation appears once.
+message so each retained explanation appears once. Known neighboring-tool
+argument-name mistakes (such as `address` instead of `procedure`, or `query`
+instead of `pattern`) provide targeted replacement guidance and the expected
+canonical property name without accepting unauthorized aliases or changing
+canonical Evidence parameters.
 If their conservative projection allowance is exhausted, the response states
 that field-level detail was omitted and retains the original SDK diagnostic.
 Oversized SDK diagnostics keep the existing retained-Evidence recovery path. An unknown
@@ -571,6 +575,21 @@ that the response budget accounts for. It does not alter `content` or
 `structuredContent`. Hosts and hooks can use it to apply stricter handling,
 such as requiring approval for process-launching or device-mutating tools
 after target content was read.
+
+## Offline API contract declarations
+
+`inspect_api_contract` reads local OpenAPI 3.0/3.1/3.2 JSON (default) or
+GraphQL SDL (`format: "graphql-sdl"`) without an active target or network requests.
+OpenAPI inventories inline path operations and unresolved Path Items. GraphQL
+inventories type/field declarations; optional `operations_path` adds operation
+owners, aliases, SDL field bindings and explicit fragment-spread edges without
+expanding fragments. Unresolved bindings and unavailable models stay explicit.
+Default summaries retain complete Evidence; `api-contract` or `graphql-contract`
+views select facts immediately with exact filters, fields and paging. Retained
+`inspect_analysis_view` uses the same projector without reopening inputs.
+Coverage describes examined declarations and does not establish runtime behavior
+or full specification/operation validity. See [offline API contracts](api-contracts.md)
+for source identities, parser allowances, supported scope and CLI publication.
 
 ## Retained application Evidence inputs
 
@@ -2001,14 +2020,19 @@ profile and the advertised form that profile produces. `full`, `compact`, and
 bounded schemas clients receive; `off` keeps the canonical output contracts in
 the digest while advertising nothing.
 
-Some stdio hosts reject a complete `tools/list` frame before they load any
-tools. The opt-in `REA_MCP_OUTPUT_SCHEMA_PROFILE=compact` setting bounds every
-advertised output schema to 4,096 bytes; `off` omits `outputSchema` entirely
+Some clients reject a complete `tools/list` frame or HTTP SSE event before
+they load any tools. The opt-in `REA_MCP_OUTPUT_SCHEMA_PROFILE=compact`
+setting bounds every advertised output schema to 4,096 bytes; `off` omits `outputSchema` entirely
 (the measured pi-web-ui failure and catalog breakdown are in
 [#2512](https://github.com/morluto/rea/issues/2512)). The default `full` profile
 is unchanged. Both settings keep the same named canonical tool contract for
 server-side result validation, and both still return complete
 `structuredContent` and text results.
+
+For the 1 MiB FastMCP SSE limit reported by Unsloth in
+[#9093](https://github.com/morluto/rea/issues/9093), see the
+[tested catalog configuration](client-configuration.md#fastmcp-and-unsloth-sse-catalog-limits).
+Hot/cold selection alone does not bound later catalog refreshes.
 
 `compact` keeps the complete validation structure when it fits the budget.
 Otherwise it advertises the root property shape, first-level reference-resolved
@@ -2121,3 +2145,12 @@ skill and portable conformance projections in the `generated-docs` artifact.
 These outputs describe the exact source revision being built; they are not
 checked-in snapshots. For a running server, `binary_session` remains the
 authoritative source of catalog identity and tool availability.
+
+## Offline Playwright traces
+
+`inspect_playwright_trace` reads a local v10 trace ZIP and defaults to a retained
+summary. `playwright-trace` views select source-located action boundaries, console
+and network facts, resource references and diagnostics; long text has bounded
+previews and character pages. Import does not contact recorded URLs or use a
+browser. See [offline Playwright traces](./playwright-traces.md) for coverage,
+resource policies and the shared CLI workflow.
