@@ -42,6 +42,7 @@ import type {
 import {
   AnalysisSnapshotCache,
   isSnapshotCacheable,
+  replaysOnlyFromImportedSnapshot,
   isSourceEvidenceRetainable,
 } from "./AnalysisSnapshotCache.js";
 import { EvidenceLedger } from "../investigation/EvidenceLedger.js";
@@ -71,6 +72,7 @@ it.each(["provider", "workflow"] as const)(
         relationshipCoverage: {
           status: "partial",
           limitations: ["original coverage"],
+          limited_directions: ["callers", "callees"],
         },
       },
     );
@@ -866,6 +868,45 @@ describe("document-scoped snapshot admission", () => {
         "one-shot-target",
       ),
     ).toBe(true);
+    // A direct tool call on a session's sole Program is recorded the same
+    // way, and replays only once the caller has opened from a snapshot.
+    expect(
+      isSnapshotCacheable(
+        "procedure_pseudo_code",
+        ghidra,
+        parameters,
+        "session-target",
+      ),
+    ).toBe(true);
+    expect(
+      isSnapshotCacheable(
+        "procedure_pseudo_code",
+        pseudocode,
+        parameters,
+        "session-target",
+      ),
+    ).toBe(false);
+    expect(
+      replaysOnlyFromImportedSnapshot(
+        "procedure_pseudo_code",
+        parameters,
+        "session-target",
+      ),
+    ).toBe(true);
+    expect(
+      replaysOnlyFromImportedSnapshot(
+        "procedure_pseudo_code",
+        { ...parameters, document: "image" },
+        "session-target",
+      ),
+    ).toBe(false);
+    expect(
+      replaysOnlyFromImportedSnapshot(
+        "procedure_pseudo_code",
+        parameters,
+        "one-shot-target",
+      ),
+    ).toBe(false);
     for (const refused of [
       pseudocode,
       { ...ghidra, cachePolicy: "live" as const },
@@ -1201,6 +1242,7 @@ describe("relationship coverage snapshot replay", () => {
     ).toEqual({
       status: "unknown",
       reason: "Snapshot entry does not report relationship coverage.",
+      limited_directions: ["callees"],
     });
   });
 });
